@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Song Lyrics — Karaoke Style</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#0f1724;
+      --accent:#ffd166;
+      --muted:#98a0b3;
+      --text:#e6eef8;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: radial-gradient(1200px 600px at 10% 10%, rgba(255,209,102,0.06), transparent),
+                  linear-gradient(180deg,#071029 0%, #081426 100%);
+      color:var(--text);
+      font-family: Inter, "Segoe UI", Roboto, "Noto Sans", Arial, sans-serif;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    .card{
+      width:min(920px,94%);
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:14px;
+      padding:28px;
+      box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+      backdrop-filter: blur(6px);
+    }
+
+    header{
+      display:flex;
+      align-items:center;
+      gap:16px;
+      margin-bottom:12px;
+    }
+    .dot{
+      width:12px;height:12px;border-radius:50%;
+      background:linear-gradient(180deg,var(--accent), #ffb84d);
+      box-shadow:0 3px 10px rgba(255,189,77,0.16);
+    }
+    h1{
+      font-size:18px;margin:0;color:var(--text);
+    }
+    p.desc{margin:4px 0 18px 0;color:var(--muted);font-size:13px}
+
+    .controls{
+      display:flex;gap:10px;align-items:center;margin-bottom:18px;
+    }
+    .btn{
+      background:transparent;border:1px solid rgba(255,255,255,0.06);
+      color:var(--text);padding:8px 12px;border-radius:10px;cursor:pointer;
+      font-size:14px;
+    }
+    .btn:active{transform:translateY(1px)}
+    .input-range{appearance:none;height:6px;border-radius:8px;background:rgba(255,255,255,0.04);width:150px}
+    .input-range::-webkit-slider-thumb{appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);box-shadow:0 2px 6px rgba(0,0,0,0.4)}
+
+    .lyrics{
+      background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.0));
+      border-radius:10px;padding:18px;max-height:56vh;overflow:auto;
+      border:1px solid rgba(255,255,255,0.03);
+    }
+    ul.lines{list-style:none;padding:0;margin:0;}
+    ul.lines li{
+      padding:10px 12px;border-radius:8px;margin-bottom:6px;color:var(--muted);
+      transition: all 260ms ease;
+      font-size:16px;line-height:1.45;
+    }
+    
+    /* কালার অ্যানিমেশন (Color Animation) যোগ করা হয়েছে */
+    ul.lines li.active{
+      background:linear-gradient(90deg, var(--accent), rgba(255,209,102,0.12)); /* উজ্জ্বল হাইলাইট */
+      background-size: 200% 100%;
+      animation: highlight-sweep 4s ease-out infinite alternate; /* অ্যানিমেশন যোগ */
+      color:var(--bg); /* অ্যাক্টিভ লাইনের টেক্সট কালার ডার্ক করা হলো */
+      transform:scale(1.01);
+      box-shadow:0 8px 22px rgba(12,18,30,0.45);
+      border-left:4px solid var(--accent);
+    }
+
+    @keyframes highlight-sweep {
+        0% { background-position: 100% 0; color: var(--bg); }
+        100% { background-position: 0% 0; color: var(--text); } /* অ্যানিমেশন শেষে টেক্সট কালার পরিবর্তন */
+    }
+
+    .small{
+      font-size:12px;color:var(--muted);
+      display:flex;justify-content:space-between;align-items:center;margin-top:10px;
+    }
+
+    @media (max-width:520px){
+      h1{font-size:16px}
+      ul.lines li{font-size:15px}
+      .controls{flex-wrap:wrap}
+    }
+  </style>
+</head>
+<body>
+  <div class="card" role="main">
+    <header>
+      <div class="dot" aria-hidden="true"></div>
+      <div>
+        <h1>Lyrics Viewer — "Love Me Like You Do" (Karaoke style)</h1>
+        <p class="desc">আপনি প্লে/পজ করে লাইন-হাইলাইট দেখতে পারবেন। (প্রতিটি লাইনের গতি এখন আলাদা এবং ধীর সেট করা হয়েছে) </p>
+      </div>
+    </header>
+
+    <div class="controls" aria-hidden="false">
+      <button id="playBtn" class="btn">Play ▶</button>
+      <button id="prevBtn" class="btn">Prev ⏮</button>
+      <button id="nextBtn" class="btn">Next ⏭</button>
+
+      <label style="margin-left:8px;font-size:13px;color:var(--muted)">Speed:</label>
+      <input id="speed" class="input-range" type="range" min="300" max="3000" step="100" value="2000" title=" milliseconds per line" disabled>
+
+      <div style="margin-left:auto;color:var(--muted);font-size:13px">
+        Line <span id="curr">0</span>/<span id="total">0</span>
+      </div>
+    </div>
+
+    <div class="lyrics" id="lyricsBox" tabindex="0">
+      <ul class="lines" id="linesList">
+        </ul>
+    </div>
+
+    <div class="small">
+      <div>Tip: প্রতিটি লাইনের গতি এখন আলাদাভাবে এবং ধীর সেট করা আছে।</div>
+      <div style="opacity:.9">Made with ♥ — use for learning/demo</div>
+    </div>
+  </div>
+
+  <script>
+    // ====== USER-PROVIDED LYRICS (WITH ADJUSTED SLOW TIMING) ======
+    // Format: [ "লিরিক্সের লাইন", সময়কাল (মিলিসেকেন্ড) ]
+    const timedLyrics = [
+        ["You're the light, you're the night", 2500], 
+        ["You're the colour of my blood", 2800],      
+        ["You're the cure, you're the pain", 2500],
+        ["You're the only thing I wanna touch", 3000],
+        ["Never knew that it could mean so much, so much", 3500],
+        ["You're the fear, I don't care", 2500],
+        ["'Cause I've never been so high", 2800],
+        ["Follow me through the dark", 2500],
+        ["Let me take you past the satellites", 3000],
+        ["You can see the world you brought to life, to life", 3500],
+        
+        // Chorus 1
+        ["So love me like you do, lo-lo-love me like you do", 3200], 
+        ["Love me like you do, lo-lo-love me like you do", 3000],
+        ["Touch me like you do, to-to-touch me like you do", 2800],
+        ["What are you waiting for?", 2500],
+        
+        ["Fading in, fading out", 2500],
+        ["On the edge of paradise", 2800],
+        ["Every inch of your skin is a holy grail I've got to find", 4000],
+        ["Only you can set my heart on fire, on fire", 4000],
+        ["Yeah, I'll let you set the pace", 2800],
+        ["'Cause I'm not thinking straight", 2800],
+        ["My head spinning around, I can't see clear no more", 4000],
+        ["What are you waiting for?", 2500],
+
+        // Chorus 2
+        ["Love me like you do, lo-lo-love me like you do", 3200], 
+        ["Love me like you do, lo-lo-love me like you do", 3000],
+        ["Touch me like you do, to-to-touch me like you do", 2800],
+        ["What are you waiting for?", 2500],
+        
+        ["I'll let you set the pace", 2800],
+        ["'Cause I'm not thinking straight", 2800],
+        ["My head spinning around, I can't see clear no more", 4000],
+        ["What are you waiting for?", 2500],
+        
+        // Final Chorus
+        ["Love me like you do, lo-lo-love me like you do", 3200], 
+        ["Love me like you do, lo-lo-love me like you do", 3000],
+        ["Touch me like you do, to-to-touch me like you do", 2800],
+        ["What are you waiting for?", 2500],
+    ];
+    // ===================================
+
+    const lyricsList = document.getElementById('linesList');
+    const playBtn = document.getElementById('playBtn');
+    const speedInput = document.getElementById('speed');
+    const currLineSpan = document.getElementById('curr');
+    const totalLineSpan = document.getElementById('total');
+    
+    // স্পিড ইনপুটটিকে এখন নিষ্ক্রিয় করা হয়েছে, কারণ গতি ডেটা থেকে আসছে
+    speedInput.disabled = true;
+
+    let currentLineIndex = 0;
+    let isPlaying = false;
+    let intervalId = null;
+    let lines = [];
+    
+    // 1. Initial Setup: Inject Lyrics and Set Line Counts
+    function initialize() {
+        totalLineSpan.textContent = timedLyrics.length;
+        timedLyrics.forEach(([lineText, duration], index) => {
+            const li = document.createElement('li');
+            li.textContent = lineText; 
+            li.dataset.index = index;
+            
+            li.onclick = () => {
+                stopPlayback();
+                highlightLine(index);
+            };
+            lyricsList.appendChild(li);
+            lines.push(li);
+        });
+        highlightLine(currentLineIndex); 
+    }
+
+    function highlightLine(newIndex) {
+        if (newIndex < 0 || newIndex >= lines.length) return;
+
+        if (lines[currentLineIndex]) {
+            lines[currentLineIndex].classList.remove('active');
+        }
+
+        currentLineIndex = newIndex;
+        currLineSpan.textContent = currentLineIndex + 1; 
+
+        lines[currentLineIndex].classList.add('active');
+
+        lines[currentLineIndex].scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+        });
+        
+        // যদি প্লে মোডে থাকে, তবে বর্তমান লাইনের টাইমিং নিয়ে নতুন ইন্টারভাল শুরু হবে
+        if (isPlaying) {
+            restartInterval();
+        }
+    }
+
+    function nextLine() {
+        if (currentLineIndex < lines.length - 1) {
+            highlightLine(currentLineIndex + 1);
+        } else {
+            stopPlayback();
+            highlightLine(0); 
+        }
+    }
+    
+    function stopPlayback() {
+        clearInterval(intervalId);
+        intervalId = null;
+        isPlaying = false;
+        playBtn.textContent = 'Play ▶';
+    }
+
+    // প্রতি লাইনের টাইমিং অনুযায়ী setInterval নতুন করে সেট করবে
+    function restartInterval() {
+        clearInterval(intervalId);
+        if (!isPlaying) return;
+        
+        // বর্তমান লাইনের সময়কাল (duration) timedLyrics থেকে নেওয়া হচ্ছে
+        const speed = timedLyrics[currentLineIndex][1]; 
+        
+        intervalId = setInterval(nextLine, speed);
+    }
+
+    function togglePlayPause() {
+        if (isPlaying) {
+            stopPlayback();
+        } else {
+            isPlaying = true;
+            playBtn.textContent = 'Pause ⏸';
+            // প্রথম লাইনের টাইমার শুরু করুন
+            restartInterval(); 
+        }
+    }
+
+    // 4. Event Listeners
+    playBtn.addEventListener('click', togglePlayPause);
+    document.getElementById('nextBtn').addEventListener('click', () => {
+        stopPlayback(); // Manual next-এ থামিয়ে দেবে
+        nextLine();
+    });
+    document.getElementById('prevBtn').addEventListener('click', () => {
+        stopPlayback(); // Manual prev-এ থামিয়ে দেবে
+        highlightLine(currentLineIndex - 1);
+    });
+
+    // Start the application
+    initialize();
+  </script>
+</body>
+</html>
